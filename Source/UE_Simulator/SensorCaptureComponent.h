@@ -17,6 +17,11 @@ public:
 	USensorCaptureComponent();
 
 protected:
+
+	// Unique identifier of this sensor
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int SensorID;
+
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
