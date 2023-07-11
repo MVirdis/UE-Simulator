@@ -3,6 +3,7 @@
 
 #include "SensorCaptureComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Components/SceneCaptureComponent2D.h"
 
 // Sets default values for this component's properties
 USensorCaptureComponent::USensorCaptureComponent()
@@ -20,6 +21,19 @@ USensorCaptureComponent::USensorCaptureComponent()
 	RenderTarget->SizeY = 1080;
 	RenderTarget->TargetGamma = 2.2f;
 	RenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8;
+
+	// Initialize SceneCapture
+	SceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("SceneCapture"));
+	SceneCapture->SetupAttachment(this);
+	SceneCapture->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the Scene capture
+	SceneCapture->TextureTarget = RenderTarget;
+	SceneCapture->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_RenderScenePrimitives;
+	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+	SceneCapture->bCaptureEveryFrame = false;
+	SceneCapture->bCaptureOnMovement = false;
+	SceneCapture->bAlwaysPersistRenderingState = true;
+	SceneCapture->SetVisibleFlag(true);
+	SceneCapture->SetHiddenInGame(false);
 }
 
 
