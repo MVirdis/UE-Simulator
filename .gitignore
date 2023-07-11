@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+# Temporary directories
+Saved/**
+Intermediate/**
+DerivedCache/**
+Binaries/**
+
+# VS Files
+.vs/**
+.vsconfig
