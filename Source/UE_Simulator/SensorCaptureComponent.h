@@ -12,6 +12,9 @@ class UE_SIMULATOR_API USensorCaptureComponent : public USceneComponent
 {
 	GENERATED_BODY()
 
+	UPROPERTY()
+	class UTextureRenderTarget2D* RenderTarget;
+
 public:	
 	// Sets default values for this component's properties
 	USensorCaptureComponent();

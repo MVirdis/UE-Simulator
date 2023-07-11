@@ -2,6 +2,7 @@
 
 
 #include "SensorCaptureComponent.h"
+#include "Engine/TextureRenderTarget2D.h"
 
 // Sets default values for this component's properties
 USensorCaptureComponent::USensorCaptureComponent()
@@ -12,6 +13,13 @@ USensorCaptureComponent::USensorCaptureComponent()
 
 	// Initialize SensorID
 	SensorID = 0;
+
+	// Initialize RenderTarget
+	RenderTarget = CreateDefaultSubobject<UTextureRenderTarget2D>(TEXT("RenderTarget"));
+	RenderTarget->SizeX = 1920;
+	RenderTarget->SizeY = 1080;
+	RenderTarget->TargetGamma = 2.2f;
+	RenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8;
 }
 
 
