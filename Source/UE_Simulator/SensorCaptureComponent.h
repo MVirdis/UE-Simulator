@@ -35,5 +35,6 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+	// Called to capture the sensor frame
+	TArray64<uint8> CaptureFrame();
 };

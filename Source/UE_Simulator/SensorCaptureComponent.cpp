@@ -4,6 +4,7 @@
 #include "SensorCaptureComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Components/SceneCaptureComponent2D.h"
+#include "ImageUtils.h"
 
 // Sets default values for this component's properties
 USensorCaptureComponent::USensorCaptureComponent()
@@ -55,3 +56,21 @@ void USensorCaptureComponent::TickComponent(float DeltaTime, ELevelTick TickType
 	// ...
 }
 
+
+TArray64<uint8> USensorCaptureComponent::CaptureFrame() {
+
+	// Trigger SceneCapture to capture the scene
+	SceneCapture->CaptureScene();
+
+	// Get the raw frame data from the render target
+	TArray64<uint8> RawData;
+	if (FImageUtils::GetRawData(RenderTarget, RawData)) {
+		// Success!
+	}
+	else {
+		// There was a problem!
+	}
+
+	return RawData;
+
+}
