@@ -19,15 +19,15 @@ class UE_SIMULATOR_API USensorCaptureComponent : public USceneComponent
 	UPROPERTY()
 	class USceneCaptureComponent2D* SceneCapture;
 
-public:	
+public:
+	// Unique identifier of this sensor
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int SensorID;
+
 	// Sets default values for this component's properties
 	USensorCaptureComponent();
 
 protected:
-
-	// Unique identifier of this sensor
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int SensorID;
 
 	// Called when the game starts
 	virtual void BeginPlay() override;
