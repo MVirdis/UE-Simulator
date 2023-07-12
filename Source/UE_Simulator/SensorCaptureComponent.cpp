@@ -17,7 +17,7 @@ USensorCaptureComponent::USensorCaptureComponent()
 	SensorID = 0;
 
 	// Initialize RenderTarget
-	RenderTarget = CreateDefaultSubobject<UTextureRenderTarget2D>(TEXT("RenderTarget"));
+	RenderTarget = NewObject<UTextureRenderTarget2D>(GetOuter());
 	RenderTarget->SizeX = 1920;
 	RenderTarget->SizeY = 1080;
 	RenderTarget->TargetGamma = 2.2f;
