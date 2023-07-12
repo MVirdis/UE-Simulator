@@ -14,7 +14,7 @@
 
 // Command Data Size Lookup-table
 const int AUE_SimulatorGameMode::CMD_DATA_SIZE[MAX_CMD_CODE] = {
-	6 * sizeof(float),	// Command Code == 0 => Move Agent
+	7 * sizeof(double),	// Command Code == 0 => Move Agent
 	0					// Command Code == 1 => Get Sensor Frame
 };
 
@@ -260,4 +260,29 @@ void AUE_SimulatorGameMode::Tick(float DeltaSeconds) {
 
 void AUE_SimulatorGameMode::ProcessCommand(CommandHeader CmdHeader, CommandData CmdData) {
 	UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Command Processor received command %d from client %d."), CmdHeader.Code, CmdHeader.ClientID);
+
+	USensorCaptureComponent const** MatchingSensors = nullptr;
+	MatchingSensors = ActiveSensors.FindByPredicate([&](USensorCaptureComponent const* ithSensorCapture) { return CmdHeader.SensorID == ithSensorCapture->SensorID; });
+	if (MatchingSensors == nullptr) {
+		UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Cannot find sensor with id %d as requested by client %d."), CmdHeader.SensorID, CmdHeader.ClientID);
+		return;
+	}
+	USensorCaptureComponent const* MatchingSensor = MatchingSensors[0];
+	AActor* TargetAgent = nullptr;
+
+	switch (CmdHeader.Code) {
+	case 0: // Move Agent possessing the specified sensor
+		UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Interpreted command: Client %d has requested to move agent with sensor %d to Location: [%.4f, %.4f, %.4f], with Rotation: [%.4f, %.4f, %.4f, %.4f] (Scalar last)"),
+			CmdHeader.ClientID, CmdHeader.SensorID, CmdData.CmdDataMove.LocationX, CmdData.CmdDataMove.LocationY, CmdData.CmdDataMove.LocationZ,
+			CmdData.CmdDataMove.QuatX, CmdData.CmdDataMove.QuatY, CmdData.CmdDataMove.QuatZ, CmdData.CmdDataMove.QuatScalar);
+
+		TargetAgent = MatchingSensor->GetOwner();
+
+		if (TargetAgent != nullptr)
+			TargetAgent->SetActorLocationAndRotation(FVector(CmdData.CmdDataMove.LocationX, CmdData.CmdDataMove.LocationY, CmdData.CmdDataMove.LocationZ),
+				FQuat(CmdData.CmdDataMove.QuatX, CmdData.CmdDataMove.QuatY, CmdData.CmdDataMove.QuatZ, CmdData.CmdDataMove.QuatScalar));
+		break;
+	default:
+		UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Command code %d not yet implemented. Requested by client %d."), CmdHeader.Code, CmdHeader.ClientID);
+	}
 }

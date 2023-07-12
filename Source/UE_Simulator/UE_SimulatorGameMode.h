@@ -29,13 +29,14 @@ struct CommandHeader {
 
 union CommandData {
 	struct CommandDataMove {
-		float LocationX;
-		float LocationY;
-		float LocationZ;
-		float RotationX;
-		float RotationY;
-		float RotationZ;
-	};
+		double LocationX;
+		double LocationY;
+		double LocationZ;
+		double QuatX;
+		double QuatY;
+		double QuatZ;
+		double QuatScalar;
+	} CmdDataMove;
 };
 // -------------------------------
 
