@@ -23,6 +23,10 @@ AUE_SimulatorGameMode::AUE_SimulatorGameMode()
 	isNetworkingInitialized = false;
 	ServerPort = 22077;
 	ListenSocket = INVALID_SOCKET;
+
+	// Give ticking capabilities
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickGroup = TG_PrePhysics;
 }
 
 bool AUE_SimulatorGameMode::RegisterSensor(USensorCaptureComponent const* sensor) {
@@ -138,4 +142,45 @@ void AUE_SimulatorGameMode::InitGame(const FString& MapName, const FString& Opti
 	Super::InitGame(MapName, Options, ErrorMessage);
 
 	InitializeNetworking();
+}
+
+SocketState AUE_SimulatorGameMode::GetSocketState(SOCKET socket) {
+	fd_set socketSetR, socketSetW, socketSetE;
+	struct timeval selectTimeout = { 0, 0 };
+	SocketState result = { false,false,false };
+
+	if (socket == INVALID_SOCKET) {
+		return result;
+	}
+
+	FD_ZERO(&socketSetR); FD_ZERO(&socketSetW); FD_ZERO(&socketSetE);
+	FD_SET(socket, &socketSetR); FD_SET(socket, &socketSetW); FD_SET(socket, &socketSetE);
+	select(0, &socketSetR, &socketSetW, &socketSetE, &selectTimeout);
+	result.read = (bool) FD_ISSET(socket, &socketSetR);
+	result.write = (bool) FD_ISSET(socket, &socketSetW);
+	result.exception = (bool) FD_ISSET(socket, &socketSetE);
+
+	return result;
+}
+
+void AUE_SimulatorGameMode::Tick(float DeltaSeconds) {
+	SocketState ListenSocketState = { false,false,false };
+
+	// Check whether someone tried to connect
+	ListenSocketState = GetSocketState(ListenSocket);
+	if (ListenSocketState.read) {
+		UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Someone asked to connect."));
+
+		// Open another socket to handle this communication
+		SOCKET ClientSocket = INVALID_SOCKET;
+
+		ClientSocket = accept(ListenSocket, NULL, NULL);
+		if (ClientSocket == INVALID_SOCKET) {
+			UE_LOG(LogUESimulator, Warning, TEXT("[AUE_SimulatorGameMode] Error connecting with the client."));
+		}
+		else {
+			ClientSockets.Add(ClientSocket);
+			UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Successfully connected with the client. Given id %d"), ClientSockets.Num() - 1);
+		}
+	}
 }

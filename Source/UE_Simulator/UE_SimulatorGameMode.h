@@ -8,6 +8,12 @@
 #include <winsock2.h>
 #include "UE_SimulatorGameMode.generated.h"
 
+struct SocketState {
+	bool read;
+	bool write;
+	bool exception;
+};
+
 UCLASS(ClassGroup = (Custom))
 class AUE_SimulatorGameMode : public AGameModeBase
 {
@@ -25,6 +31,10 @@ private:
 	bool isNetworkingInitialized;
 
 	SOCKET ListenSocket;
+
+	TArray<SOCKET> ClientSockets;
+
+	static SocketState GetSocketState(SOCKET socket);
 	// -----------------------------
 
 public:
@@ -37,4 +47,6 @@ public:
 	bool InitializeNetworking();
 
 	void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+
+	void Tick(float DeltaSeconds) override;
 };
