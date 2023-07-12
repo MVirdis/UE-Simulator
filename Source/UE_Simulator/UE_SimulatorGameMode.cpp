@@ -12,6 +12,12 @@
 #include "UObject/ConstructorHelpers.h"
 #include "SensorCaptureComponent.h"
 
+// Command Data Size Lookup-table
+const int AUE_SimulatorGameMode::CMD_DATA_SIZE[MAX_CMD_CODE] = {
+	6 * sizeof(float),	// Command Code == 0 => Move Agent
+	0					// Command Code == 1 => Get Sensor Frame
+};
+
 AUE_SimulatorGameMode::AUE_SimulatorGameMode()
 	: Super()
 {
@@ -140,7 +146,6 @@ AUE_SimulatorGameMode::~AUE_SimulatorGameMode() {
 
 void AUE_SimulatorGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) {
 	Super::InitGame(MapName, Options, ErrorMessage);
-
 	InitializeNetworking();
 }
 
@@ -164,7 +169,13 @@ SocketState AUE_SimulatorGameMode::GetSocketState(SOCKET socket) {
 }
 
 void AUE_SimulatorGameMode::Tick(float DeltaSeconds) {
-	SocketState ListenSocketState = { false,false,false };
+	SOCKET ClientSocket = INVALID_SOCKET;
+	SocketState ListenSocketState = { false,false,false }, ClientSocketState = { false,false,false };
+	int iResult;
+	CommandHeader CmdHeader = {0,0,0};
+	CommandData CmdData;
+	bool lost = false, invalid = true;
+	TArray<int> ToRemove;
 
 	// Check whether someone tried to connect
 	ListenSocketState = GetSocketState(ListenSocket);
@@ -172,8 +183,6 @@ void AUE_SimulatorGameMode::Tick(float DeltaSeconds) {
 		UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Someone asked to connect."));
 
 		// Open another socket to handle this communication
-		SOCKET ClientSocket = INVALID_SOCKET;
-
 		ClientSocket = accept(ListenSocket, NULL, NULL);
 		if (ClientSocket == INVALID_SOCKET) {
 			UE_LOG(LogUESimulator, Warning, TEXT("[AUE_SimulatorGameMode] Error connecting with the client."));
@@ -183,4 +192,72 @@ void AUE_SimulatorGameMode::Tick(float DeltaSeconds) {
 			UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Successfully connected with the client. Given id %d"), ClientSockets.Num() - 1);
 		}
 	}
+
+	// No clients to listen to
+	if (ClientSockets.Num() == 0) return;
+
+	// Listen to connected clients
+	for (int ClientID = 0; ClientID < ClientSockets.Num(); ++ClientID) {
+		lost = false; invalid = true;
+		ClientSocketState.read = false; ClientSocketState.write = false; ClientSocketState.exception = false;
+		
+		ClientSocket = ClientSockets[ClientID];
+		ClientSocketState = GetSocketState(ClientSocket);
+
+		if (ClientSocketState.read) {
+			UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Client %d has updates."), ClientID);
+
+			// Receive the Command Header
+			CmdHeader.ClientID = ClientID;
+			iResult = recv(ClientSocket, reinterpret_cast<char*>( &(CmdHeader.Code) ), 2, 0);
+			if (iResult > 0) { // Success we have a command
+				UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Received %d bytes from client %d. Will constitute Command Header."), iResult, ClientID);
+				UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Command Code: %d, Sensor ID: %d"), CmdHeader.Code, CmdHeader.SensorID);
+
+				// Get the command data
+				if (CmdHeader.Code < MAX_CMD_CODE && CMD_DATA_SIZE[CmdHeader.Code] > 0) {
+					iResult = recv(ClientSocket, reinterpret_cast<char*>( &CmdData ), CMD_DATA_SIZE[CmdHeader.Code], 0);
+					if (iResult > 0) {
+						UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Received %d bytes of %d from client %d. Will constitute Command Data."), iResult, CMD_DATA_SIZE[CmdHeader.Code], ClientID);
+						if (iResult == CMD_DATA_SIZE[CmdHeader.Code]) invalid = false;
+						else {
+							UE_LOG(LogUESimulator, Warning, TEXT("[AUE_SimulatorGameMode] Invalid command. Discarding"));
+						}
+					}
+					else {
+						UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Lost connection with client %d. Error code is %d. Discarding Command."), ClientID, iResult);
+						lost = true;
+					}
+				}
+				else { // If no cmd data is required we assume the command is valid
+					invalid = false;
+				}
+			}
+			else {
+				UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Lost connection with client %d error code: %d."), ClientID, iResult);
+				lost = true;
+			}
+
+			if (lost) {
+				ToRemove.Add(ClientID);
+			}
+			else if(!invalid) {
+				// Dispatch to command processor
+				ProcessCommand(CmdHeader, CmdData);
+			}
+		}
+
+	}
+
+	// Remove lost clients
+	if (ToRemove.Num() > 0) {
+		for (int i = 0; i < ToRemove.Num(); ++i) {
+			ClientSockets.RemoveAt(ToRemove[i]);
+		}
+		ToRemove.Empty();
+	}
+}
+
+void AUE_SimulatorGameMode::ProcessCommand(CommandHeader CmdHeader, CommandData CmdData) {
+	UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Command Processor received command %d from client %d."), CmdHeader.Code, CmdHeader.ClientID);
 }

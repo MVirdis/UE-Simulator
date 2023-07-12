@@ -14,6 +14,31 @@ struct SocketState {
 	bool exception;
 };
 
+// ---- Command Data -----------
+
+#define MAX_CMD_CODE 2
+
+// Command Code 0: Move agent command, expected CmdDataSize of 6*sizeof(float)
+// Command Code 1: Get sensor frame command, expected CmdDataSize of 0
+
+struct CommandHeader {
+	int ClientID;
+	uint8 Code;
+	uint8 SensorID;
+};
+
+union CommandData {
+	struct CommandDataMove {
+		float LocationX;
+		float LocationY;
+		float LocationZ;
+		float RotationX;
+		float RotationY;
+		float RotationZ;
+	};
+};
+// -------------------------------
+
 UCLASS(ClassGroup = (Custom))
 class AUE_SimulatorGameMode : public AGameModeBase
 {
@@ -34,7 +59,11 @@ private:
 
 	TArray<SOCKET> ClientSockets;
 
+	static const int CMD_DATA_SIZE[MAX_CMD_CODE];
+	
 	static SocketState GetSocketState(SOCKET socket);
+
+	void ProcessCommand(CommandHeader CmdHeader, CommandData CmdData);
 	// -----------------------------
 
 public:
