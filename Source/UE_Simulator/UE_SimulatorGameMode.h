@@ -6,14 +6,16 @@
 #include "GameFramework/GameModeBase.h"
 #include "UE_SimulatorGameMode.generated.h"
 
-UCLASS(minimalapi)
+UCLASS(ClassGroup = (Custom))
 class AUE_SimulatorGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
+	// List of active sensors in the level
+	TArray<class USensorCaptureComponent const *> ActiveSensors;
+
 public:
 	AUE_SimulatorGameMode();
+
+	bool RegisterSensor(class USensorCaptureComponent const * sensor);
 };
-
-
-

@@ -4,6 +4,7 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "ImageUtils.h"
+#include "UE_SimulatorGameMode.h"
 
 DEFINE_LOG_CATEGORY(LogSensorCapture);
 
@@ -44,7 +45,14 @@ void USensorCaptureComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
+	// Register this sensor to the simulation game mode
+	AUE_SimulatorGameMode* GameMode = Cast<AUE_SimulatorGameMode>(GetWorld()->GetAuthGameMode());
+	if (GameMode->RegisterSensor(this)) {
+		UE_LOG(LogSensorCapture, Log, TEXT("Successfully registered sensor %d to simulation game mode"), SensorID);
+	}
+	else {
+		UE_LOG(LogSensorCapture, Log, TEXT("Failed to register sensor %d to simulation game mode"), SensorID);
+	}
 	
 }
 
