@@ -1,10 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "SensorCaptureComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "ImageUtils.h"
+
+DEFINE_LOG_CATEGORY(LogSensorCapture);
 
 // Sets default values for this component's properties
 USensorCaptureComponent::USensorCaptureComponent()
@@ -66,9 +67,11 @@ TArray64<uint8> USensorCaptureComponent::CaptureFrame() {
 	TArray64<uint8> RawData;
 	if (FImageUtils::GetRawData(RenderTarget, RawData)) {
 		// Success!
+		UE_LOG(LogSensorCapture, Log, TEXT("Successfully captured a frame for sensor %d"), SensorID);
 	}
 	else {
 		// There was a problem!
+		UE_LOG(LogSensorCapture, Log, TEXT("Error capturing a frame for sensor %d"), SensorID);
 	}
 
 	return RawData;
