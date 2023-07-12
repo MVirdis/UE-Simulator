@@ -2,9 +2,8 @@
 
 #pragma once
 
-DECLARE_LOG_CATEGORY_EXTERN(LogSensorCapture, Log, All);
-
 #include "CoreMinimal.h"
+#include "CustomLogging.h"
 #include "Components/SceneComponent.h"
 #include "SensorCaptureComponent.generated.h"
 

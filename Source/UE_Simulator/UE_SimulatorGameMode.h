@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CustomLogging.h"
 #include "GameFramework/GameModeBase.h"
 #include "UE_SimulatorGameMode.generated.h"
 

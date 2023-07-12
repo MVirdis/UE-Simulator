@@ -6,8 +6,6 @@
 #include "ImageUtils.h"
 #include "UE_SimulatorGameMode.h"
 
-DEFINE_LOG_CATEGORY(LogSensorCapture);
-
 // Sets default values for this component's properties
 USensorCaptureComponent::USensorCaptureComponent()
 {
@@ -48,10 +46,10 @@ void USensorCaptureComponent::BeginPlay()
 	// Register this sensor to the simulation game mode
 	AUE_SimulatorGameMode* GameMode = Cast<AUE_SimulatorGameMode>(GetWorld()->GetAuthGameMode());
 	if (GameMode->RegisterSensor(this)) {
-		UE_LOG(LogSensorCapture, Log, TEXT("Successfully registered sensor %d to simulation game mode"), SensorID);
+		UE_LOG(LogUESimulator, Log, TEXT("Successfully registered sensor %d to simulation game mode"), SensorID);
 	}
 	else {
-		UE_LOG(LogSensorCapture, Log, TEXT("Failed to register sensor %d to simulation game mode"), SensorID);
+		UE_LOG(LogUESimulator, Log, TEXT("Failed to register sensor %d to simulation game mode"), SensorID);
 	}
 	
 }
@@ -75,11 +73,11 @@ TArray64<uint8> USensorCaptureComponent::CaptureFrame() {
 	TArray64<uint8> RawData;
 	if (FImageUtils::GetRawData(RenderTarget, RawData)) {
 		// Success!
-		UE_LOG(LogSensorCapture, Log, TEXT("Successfully captured a frame for sensor %d"), SensorID);
+		UE_LOG(LogUESimulator, Log, TEXT("Successfully captured a frame for sensor %d"), SensorID);
 	}
 	else {
 		// There was a problem!
-		UE_LOG(LogSensorCapture, Log, TEXT("Error capturing a frame for sensor %d"), SensorID);
+		UE_LOG(LogUESimulator, Log, TEXT("Error capturing a frame for sensor %d"), SensorID);
 	}
 
 	return RawData;
