@@ -14,9 +14,6 @@ class UE_SIMULATOR_API USensorCaptureComponent : public USceneComponent
 	GENERATED_BODY()
 
 	UPROPERTY()
-	class UTextureRenderTarget2D* RenderTarget;
-
-	UPROPERTY()
 	class USceneCaptureComponent2D* SceneCapture;
 
 public:
@@ -38,4 +35,5 @@ public:
 
 	// Called to capture the sensor frame
 	TArray64<uint8> CaptureFrame();
+
 };

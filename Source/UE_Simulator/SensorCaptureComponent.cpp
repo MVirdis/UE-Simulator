@@ -1,9 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SensorCaptureComponent.h"
-#include "Engine/TextureRenderTarget2D.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "ImageUtils.h"
+#include "Kismet/KismetRenderingLibrary.h"
 #include "UE_SimulatorGameMode.h"
 
 // Sets default values for this component's properties
@@ -16,18 +16,10 @@ USensorCaptureComponent::USensorCaptureComponent()
 	// Initialize SensorID
 	SensorID = 0;
 
-	// Initialize RenderTarget
-	RenderTarget = NewObject<UTextureRenderTarget2D>(GetOuter());
-	RenderTarget->SizeX = 1920;
-	RenderTarget->SizeY = 1080;
-	RenderTarget->TargetGamma = 2.2f;
-	RenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8;
-
 	// Initialize SceneCapture
 	SceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("SceneCapture"));
 	SceneCapture->SetupAttachment(this);
 	SceneCapture->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the Scene capture
-	SceneCapture->TextureTarget = RenderTarget;
 	SceneCapture->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_RenderScenePrimitives;
 	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
 	SceneCapture->bCaptureEveryFrame = false;
@@ -42,6 +34,13 @@ USensorCaptureComponent::USensorCaptureComponent()
 void USensorCaptureComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Initialize new RenderTarget
+	SceneCapture->TextureTarget = UKismetRenderingLibrary::CreateRenderTarget2D(GetOuter(), 1920, 1080, ETextureRenderTargetFormat::RTF_RGBA8, FLinearColor::Black, false, false);;
+	SceneCapture->TextureTarget->SizeX = 1920;
+	SceneCapture->TextureTarget->SizeY = 1080;
+	SceneCapture->TextureTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8;
+	SceneCapture->TextureTarget->TargetGamma = 2.2f;
 
 	// Register this sensor to the simulation game mode
 	AUE_SimulatorGameMode* GameMode = Cast<AUE_SimulatorGameMode>(GetWorld()->GetAuthGameMode());
@@ -71,7 +70,7 @@ TArray64<uint8> USensorCaptureComponent::CaptureFrame() {
 
 	// Get the raw frame data from the render target
 	TArray64<uint8> RawData;
-	if (FImageUtils::GetRawData(RenderTarget, RawData)) {
+	if (FImageUtils::GetRawData(SceneCapture->TextureTarget, RawData)) {
 		// Success!
 		UE_LOG(LogUESimulator, Log, TEXT("Successfully captured a frame for sensor %d"), SensorID);
 	}
