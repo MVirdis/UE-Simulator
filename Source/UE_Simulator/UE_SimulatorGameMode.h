@@ -46,7 +46,7 @@ class AUE_SimulatorGameMode : public AGameModeBase
 	GENERATED_BODY()
 
 	// List of active sensors in the level
-	TArray<class USensorCaptureComponent const *> ActiveSensors;
+	TArray<class USensorCaptureComponent*> ActiveSensors;
 
 	// ---- Windows Networking -----
 public:
@@ -72,7 +72,7 @@ public:
 
 	~AUE_SimulatorGameMode();
 
-	bool RegisterSensor(class USensorCaptureComponent const * sensor);
+	bool RegisterSensor(class USensorCaptureComponent* sensor);
 
 	bool InitializeNetworking();
 

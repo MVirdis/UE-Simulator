@@ -35,13 +35,13 @@ AUE_SimulatorGameMode::AUE_SimulatorGameMode()
 	PrimaryActorTick.TickGroup = TG_PrePhysics;
 }
 
-bool AUE_SimulatorGameMode::RegisterSensor(USensorCaptureComponent const* sensor) {
+bool AUE_SimulatorGameMode::RegisterSensor(USensorCaptureComponent* sensor) {
 	// Check whether the list already contains the sensor
 	if (ActiveSensors.Find(sensor) != INDEX_NONE) {
 		UE_LOG(LogUESimulator, Warning, TEXT("[AUE_SimulatorGameMode] The sensor object is already contained in the list of active sensors."));
 		return false;
 	}
-	else if (ActiveSensors.FindByPredicate([=](USensorCaptureComponent const* ithSensor) { return (ithSensor->SensorID == sensor->SensorID); }) != nullptr) {
+	else if (ActiveSensors.FindByPredicate([=](USensorCaptureComponent* ithSensor) { return (ithSensor->SensorID == sensor->SensorID); }) != nullptr) {
 		UE_LOG(LogUESimulator, Warning, TEXT("[AUE_SimulatorGameMode] A sensor with the same ID (%d) is already contained in the list of active sensors."), sensor->SensorID);
 		return false;
 	}
@@ -261,14 +261,20 @@ void AUE_SimulatorGameMode::Tick(float DeltaSeconds) {
 void AUE_SimulatorGameMode::ProcessCommand(CommandHeader CmdHeader, CommandData CmdData) {
 	UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Command Processor received command %d from client %d."), CmdHeader.Code, CmdHeader.ClientID);
 
-	USensorCaptureComponent const** MatchingSensors = nullptr;
-	MatchingSensors = ActiveSensors.FindByPredicate([&](USensorCaptureComponent const* ithSensorCapture) { return CmdHeader.SensorID == ithSensorCapture->SensorID; });
+	USensorCaptureComponent** MatchingSensors = nullptr;
+	MatchingSensors = ActiveSensors.FindByPredicate([&](USensorCaptureComponent* ithSensorCapture) { return CmdHeader.SensorID == ithSensorCapture->SensorID; });
 	if (MatchingSensors == nullptr) {
 		UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Cannot find sensor with id %d as requested by client %d."), CmdHeader.SensorID, CmdHeader.ClientID);
 		return;
 	}
-	USensorCaptureComponent const* MatchingSensor = MatchingSensors[0];
+	USensorCaptureComponent* MatchingSensor = MatchingSensors[0];
+	
+	// Various local variables
 	AActor* TargetAgent = nullptr;
+	TArray64<uint8> RawFrameData;
+	SocketState ClientSocketState = { false,false,false };
+	SOCKET ClientSocket = INVALID_SOCKET;
+	int iResult;
 
 	switch (CmdHeader.Code) {
 	case 0: // Move Agent possessing the specified sensor
@@ -281,6 +287,27 @@ void AUE_SimulatorGameMode::ProcessCommand(CommandHeader CmdHeader, CommandData 
 		if (TargetAgent != nullptr)
 			TargetAgent->SetActorLocationAndRotation(FVector(CmdData.CmdDataMove.LocationX, CmdData.CmdDataMove.LocationY, CmdData.CmdDataMove.LocationZ),
 				FQuat(CmdData.CmdDataMove.QuatX, CmdData.CmdDataMove.QuatY, CmdData.CmdDataMove.QuatZ, CmdData.CmdDataMove.QuatScalar));
+		break;
+	case 1: // Get sensor frame
+
+		RawFrameData = MatchingSensor->CaptureFrame();
+
+		// Send data back to client
+		ClientSocket = ClientSockets[CmdHeader.ClientID];
+		ClientSocketState = GetSocketState(ClientSocket);
+		if (ClientSocketState.write) {
+			iResult = send(ClientSocket, reinterpret_cast<char*>(RawFrameData.GetData()), RawFrameData.Num(), 0);
+			if (iResult == SOCKET_ERROR) {
+				UE_LOG(LogUESimulator, Warning, TEXT("[AUE_SimulatorGameMode] Could not send frame back to client %d. The socket returned error %d"), CmdHeader.ClientID, iResult);
+			}
+			else {
+				UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Sent frame back to client %d"), CmdHeader.ClientID);
+			}
+		}
+		else {
+			UE_LOG(LogUESimulator, Warning, TEXT("[AUE_SimulatorGameMode] Cannot send frame back to client %d. The socket is not ready to be written"), CmdHeader.ClientID);
+		}
+
 		break;
 	default:
 		UE_LOG(LogUESimulator, Log, TEXT("[AUE_SimulatorGameMode] Command code %d not yet implemented. Requested by client %d."), CmdHeader.Code, CmdHeader.ClientID);
